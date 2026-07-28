@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kesto Engine | Pure Front-End Solver</title>
+    <meta
+      name="description"
+      content="Kesto Puzzle Search Engine - Custom 8x8 Board Editor & Pathfinding Visualizer"
+    />
+    <link rel="stylesheet" href="/src/styles/main.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon">K</div>
+        <div class="brand-title">Kesto Engine</div>
+      </div>
+
+    </header>
+
+    <!-- Main Container -->
+    <main class="app-container">
+      <!-- Left: 8x8 Board & Editor Tools Section -->
+      <section class="board-section">
+        <!-- Consolidated Board Toolbar -->
+        <div class="board-toolbar">
+          <div class="toolbar-row">
+            <div style="flex: 1;">
+              <span class="toolbar-label">BRUSHES</span>
+              <div class="tool-group">
+                <button id="toolWall" class="tool-btn active" title="Wall Brush (Hotkey 1)">
+                  <i data-lucide="square"></i>
+                  <span>Wall</span>
+                  <span class="key-badge">1</span>
+                </button>
+                <button id="toolBox" class="tool-btn" title="Box Brush (Hotkey 2)">
+                  <i data-lucide="package"></i>
+                  <span>Box</span>
+                  <span class="key-badge">2</span>
+                </button>
+                <button id="toolTarget" class="tool-btn" title="Target Brush (Hotkey 3)">
+                  <i data-lucide="target"></i>
+                  <span>Target</span>
+                  <span class="key-badge">3</span>
+                </button>
+                <button id="toolErase" class="tool-btn" title="Eraser (Hotkey 4)">
+                  <i data-lucide="eraser"></i>
+                  <span>Erase</span>
+                  <span class="key-badge">4</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="toolbar-row" style="margin-top: 4px;">
+            <div style="flex: 1;">
+              <span class="toolbar-label">BOARD & FILE ACTIONS</span>
+              <div class="tool-group action-group">
+                <button id="btnReset" class="btn" title="Reset Boxes to Initial Position" disabled>
+                  <i data-lucide="rotate-ccw"></i>
+                  <span>Reset</span>
+                </button>
+                <button id="btnRandom" class="btn" title="Load Next Sample Preset Board">
+                  <i data-lucide="sparkles"></i>
+                  <span>Sample</span>
+                </button>
+                <button id="btnClearAll" class="btn btn-danger" title="Clear Entire Board">
+                  <i data-lucide="trash-2"></i>
+                  <span>Clear</span>
+                </button>
+                <button id="btnImportJSON" class="btn" title="Import Board JSON File">
+                  <i data-lucide="upload"></i>
+                  <span>Import</span>
+                </button>
+                <button id="btnExportJSON" class="btn" title="Export Board JSON File">
+                  <i data-lucide="download"></i>
+                  <span>Export</span>
+                </button>
+                <input type="file" id="fileInputJSON" accept=".json" style="display: none;" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Board Grid -->
+        <div id="boardWrapper" class="board-wrapper">
+          <div id="boardGrid" class="board-grid">
+            <!-- 64 Grid Cells rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Directional D-Pad & Manual Control Panel -->
+        <div class="dpad-panel">
+          <div class="dpad-hint">
+            <div class="dpad-title">
+              <i data-lucide="gamepad-2"></i>
+              <span>Manual Move Controls</span>
+            </div>
+            <span class="dpad-sub">Use Arrow Keys or W / A / S / D</span>
+          </div>
+
+          <div class="dpad-container">
+            <button id="btnUp" class="btn-dpad dpad-up" title="Move Up (ArrowUp / W)" aria-label="Move Up">
+              <i data-lucide="arrow-up"></i>
+            </button>
+            <button id="btnLeft" class="btn-dpad dpad-left" title="Move Left (ArrowLeft / A)" aria-label="Move Left">
+              <i data-lucide="arrow-left"></i>
+            </button>
+            <button id="btnRight" class="btn-dpad dpad-right" title="Move Right (ArrowRight / D)" aria-label="Move Right">
+              <i data-lucide="arrow-right"></i>
+            </button>
+            <button id="btnDown" class="btn-dpad dpad-down" title="Move Down (ArrowDown / S)" aria-label="Move Down">
+              <i data-lucide="arrow-down"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Control & Telemetry Dashboard -->
+      <section class="dashboard-section">
+        <!-- Engine Solver Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <i data-lucide="play-circle"></i>
+              <span>Engine</span>
+            </div>
+            <span id="statusBadge" class="status-badge idle">IDLE</span>
+          </div>
+
+          <div class="btn-group">
+            <button id="solveBtn" class="btn btn-primary" style="flex: 1;">
+              <i data-lucide="play"></i>
+              <span>Solve Path</span>
+            </button>
+            <button id="cancelBtn" class="btn btn-danger" style="display: none; flex: 1;">
+              <i data-lucide="square"></i>
+              <span>Stop Search</span>
+            </button>
+          </div>
+
+          <div id="searchLoader" class="search-loader">
+            <div class="search-loader-bar"></div>
+          </div>
+
+          <!-- Stats Grid -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-label">Optimal Steps</span>
+              <div id="statSteps" class="stat-value">-</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Search Time</span>
+              <div id="statTime" class="stat-value">0 ms</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Nodes Expanded</span>
+              <div id="statNodes" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Visited States</span>
+              <div id="statVisited" class="stat-value">0</div>
+            </div>
+          </div>
+
+          <!-- Solution Playback Controls -->
+          <div id="playbackSection" style="margin-top: 16px; display: none;">
+            <div class="playback-bar">
+              <button id="btnFirstStep" class="btn" title="Jump to Start (Step 0)">
+                <i data-lucide="skip-back"></i>
+              </button>
+              <button id="btnPrevStep" class="btn" title="Previous Step">
+                <i data-lucide="chevron-left"></i>
+              </button>
+              <button id="btnPlayPause" class="btn btn-primary" title="Play / Pause">
+                <i data-lucide="play"></i>
+                <span id="playPauseText">Play</span>
+              </button>
+              <button id="btnNextStep" class="btn" title="Next Step">
+                <i data-lucide="chevron-right"></i>
+              </button>
+              <button id="btnLastStep" class="btn" title="Jump to End (Final Step)">
+                <i data-lucide="skip-forward"></i>
+              </button>
+            </div>
+
+            <!-- Path Steps Tag List -->
+            <div id="pathMovesContainer" class="path-container">
+              <!-- Direction badges appended dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      Kesto Engine &copy; 2026 Pure Front-End Solver | Minimalist Modern Edition
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
