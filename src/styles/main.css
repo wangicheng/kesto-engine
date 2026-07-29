@@ -15,6 +15,10 @@
   --color-box: #E8A54B;
   --color-target: #5B9BD5;
 
+  --board-radius: 2cqi;
+  --board-pad: 2cqi;
+  --board-gap: 1cqi;
+
   --cell-size: min(58px, calc((100vw - 80px) / 8));
   --grid-gap: 6px;
 
@@ -226,6 +230,9 @@ body {
 }
 
 .board-wrapper {
+  container-type: inline-size;
+  width: 100%;
+  aspect-ratio: 1;
   padding: 0;
   background: transparent;
   border: none;
@@ -234,25 +241,31 @@ body {
 
 .board-grid {
   display: grid;
-  grid-template-columns: repeat(8, var(--cell-size));
-  grid-template-rows: repeat(8, var(--cell-size));
-  gap: var(--grid-gap);
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  gap: var(--board-gap);
+  width: 100%;
+  height: 100%;
+  padding: var(--board-pad);
   background: #222222;
-  padding: 12px;
-  border-radius: var(--radius-md);
+  border-radius: calc(var(--board-radius) + var(--board-pad));
   border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+  position: relative;
 }
 
 /* Cell Styling (Empty: #2A2A2A) */
 .cell {
-  width: var(--cell-size);
-  height: var(--cell-size);
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
   background: #2A2A2A;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--board-radius);
   position: relative;
   display: flex;
   align-items: center;
@@ -274,27 +287,27 @@ body {
   background: #555555;
 }
 
-/* Target (Hollow #5B9BD5, Full Cover) */
+/* Target (Hollow #5B9BD5 with 1cqi inset box shadow) */
 .target-indicator {
   width: 100%;
   height: 100%;
   top: 0;
   left: 0;
-  border: 5px solid #5B9BD5;
-  border-radius: var(--radius-sm);
+  border-radius: var(--board-radius);
+  box-shadow: inset 0 0 0 1cqi #5B9BD5;
   position: absolute;
   pointer-events: none;
   background: transparent;
   box-sizing: border-box;
 }
 
-/* Box (Solid #E8A54B, Full Cover, No Border) */
+/* Box (Solid #E8A54B, Full Cover) */
 .box-element {
   width: 100%;
   height: 100%;
   background: #E8A54B;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--board-radius);
   position: absolute;
   top: 0;
   left: 0;
@@ -305,16 +318,18 @@ body {
   font-weight: 700;
   font-size: 16px;
   color: #ffffff;
-  transition: transform 0.15s ease-out, background 0.2s ease;
+  transition: transform 0.15s ease-out, background 0.2s ease, box-shadow 0.2s ease;
   z-index: 10;
   pointer-events: none;
+  box-shadow: 0 0 0 0 transparent;
 }
 
-/* Box on Target (Solid #5B9BD5, Full Cover, No Border) */
+/* Box on Target (Solid #5B9BD5 with outer glow) */
 .box-element.on-target {
   background: #5B9BD5;
   border: none;
   color: #ffffff;
+  box-shadow: 0 0 1.5cqi 0.5cqi rgba(91, 155, 213, 0.4);
 }
 
 /* D-Pad Manual Play Controls */
