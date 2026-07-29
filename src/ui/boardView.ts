@@ -20,7 +20,7 @@ export class BoardView {
   private callbacks: BoardViewCallbacks = {};
 
   private cellElements: HTMLElement[] = [];
-  private boxElementsMap = new Map<number, HTMLElement>();
+  private boxElements: HTMLElement[] = [];
 
   private orderIndices = new Int32Array(64);
   private tempPositions = new Int32Array(64);
@@ -111,7 +111,11 @@ export class BoardView {
   }
 
   public setBoxes(newBoxes: number[], animated = true): void {
-    this.boxes = [...newBoxes].sort((a, b) => a - b);
+    if (animated && this.boxes.length > 0 && this.boxes.length === newBoxes.length) {
+      this.boxes = matchBoxes(this.boxes, newBoxes);
+    } else {
+      this.boxes = [...newBoxes].sort((a, b) => a - b);
+    }
     this.renderBoxes(animated);
   }
 
@@ -124,8 +128,7 @@ export class BoardView {
     const result = simulateMove(lo, hi, this.boxes, wallBitboard, dir, this.orderIndices, this.tempPositions);
 
     if (result.moved) {
-      this.boxes = result.newState;
-      this.renderBoxes(true);
+      this.setBoxes(result.newState, true);
       this.callbacks.onMove?.(dir, this.boxes);
       return true;
     }
@@ -226,28 +229,32 @@ export class BoardView {
     this.renderBoxes(false);
   }
 
-  private renderBoxes(_animated: boolean): void {
-    // Remove obsolete box DOM elements
-    const boxSet = new Set(this.boxes);
-    for (const [idx, el] of this.boxElementsMap.entries()) {
-      if (!boxSet.has(idx)) {
-        el.remove();
-        this.boxElementsMap.delete(idx);
+  private renderBoxes(animated = false): void {
+    // 1. Measure initial bounding rects if animating and element count matches
+    const oldRects: (DOMRect | null)[] = [];
+    if (animated && this.boxElements.length === this.boxes.length) {
+      for (let i = 0; i < this.boxElements.length; i++) {
+        oldRects.push(this.boxElements[i].getBoundingClientRect());
       }
     }
 
-    // Create or update box DOM elements
+    // 2. Adjust box DOM elements count to match this.boxes.length
+    while (this.boxElements.length < this.boxes.length) {
+      const boxEl = document.createElement('div');
+      boxEl.className = 'box-element';
+      boxEl.textContent = '';
+      this.boxElements.push(boxEl);
+    }
+    while (this.boxElements.length > this.boxes.length) {
+      const el = this.boxElements.pop();
+      el?.remove();
+    }
+
+    // 3. Update DOM placement and target classes
     for (let i = 0; i < this.boxes.length; i++) {
       const boxIdx = this.boxes[i];
       const cell = this.cellElements[boxIdx];
-
-      let boxEl = this.boxElementsMap.get(boxIdx);
-      if (!boxEl) {
-        boxEl = document.createElement('div');
-        boxEl.className = 'box-element';
-        boxEl.textContent = ''; // Blank boxes with no numbers written
-        this.boxElementsMap.set(boxIdx, boxEl);
-      }
+      const boxEl = this.boxElements[i];
 
       if (this.targets.has(boxIdx)) {
         boxEl.classList.add('on-target');
@@ -259,5 +266,136 @@ export class BoardView {
         cell.appendChild(boxEl);
       }
     }
+
+    // 4. Perform FLIP animation if requested and positions changed
+    if (animated && oldRects.length === this.boxes.length) {
+      const animatedEls: { el: HTMLElement; dx: number; dy: number }[] = [];
+
+      for (let i = 0; i < this.boxes.length; i++) {
+        const el = this.boxElements[i];
+        const oldRect = oldRects[i];
+        if (!oldRect) continue;
+
+        const newRect = el.getBoundingClientRect();
+        const dx = oldRect.left - newRect.left;
+        const dy = oldRect.top - newRect.top;
+
+        if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+          el.style.transition = 'none';
+          el.style.transform = `translate(${dx}px, ${dy}px)`;
+          el.style.zIndex = '100';
+          animatedEls.push({ el, dx, dy });
+        }
+      }
+
+      if (animatedEls.length > 0) {
+        // Force reflow
+        void this.gridElement.offsetHeight;
+
+        requestAnimationFrame(() => {
+          for (const { el } of animatedEls) {
+            el.style.transition = 'transform 0.22s cubic-bezier(0.25, 1, 0.5, 1), background 0.2s ease';
+            el.style.transform = '';
+
+            const onEnd = () => {
+              el.style.zIndex = '';
+              el.removeEventListener('transitionend', onEnd);
+            };
+            el.addEventListener('transitionend', onEnd);
+          }
+        });
+      }
+    }
   }
+}
+
+function distSq(idx1: number, idx2: number): number {
+  const x1 = idx1 % 8;
+  const y1 = Math.floor(idx1 / 8);
+  const x2 = idx2 % 8;
+  const y2 = Math.floor(idx2 / 8);
+  const dx = x1 - x2;
+  const dy = y1 - y2;
+  return dx * dx + dy * dy;
+}
+
+function solveHungarian(costMatrix: number[][]): number[] {
+  const n = costMatrix.length;
+  if (n === 0) return [];
+  if (n === 1) return [0];
+
+  const u = new Float64Array(n + 1);
+  const v = new Float64Array(n + 1);
+  const p = new Int32Array(n + 1);
+  const way = new Int32Array(n + 1);
+
+  for (let i = 1; i <= n; i++) {
+    p[0] = i;
+    let j0 = 0;
+    const minv = new Float64Array(n + 1).fill(Infinity);
+    const used = new Uint8Array(n + 1);
+
+    do {
+      used[j0] = 1;
+      const i0 = p[j0];
+      let delta = Infinity;
+      let j1 = 0;
+
+      for (let j = 1; j <= n; j++) {
+        if (!used[j]) {
+          const cur = costMatrix[i0 - 1][j - 1] - u[i0] - v[j];
+          if (cur < minv[j]) {
+            minv[j] = cur;
+            way[j] = j0;
+          }
+          if (minv[j] < delta) {
+            delta = minv[j];
+            j1 = j;
+          }
+        }
+      }
+
+      for (let j = 0; j <= n; j++) {
+        if (used[j]) {
+          u[p[j]] += delta;
+          v[j] -= delta;
+        } else {
+          minv[j] -= delta;
+        }
+      }
+
+      j0 = j1;
+    } while (p[j0] !== 0);
+
+    do {
+      const j1 = way[j0];
+      p[j0] = p[j1];
+      j0 = j1;
+    } while (j0 !== 0);
+  }
+
+  const result = new Array<number>(n);
+  for (let j = 1; j <= n; j++) {
+    result[p[j] - 1] = j - 1;
+  }
+  return result;
+}
+
+function matchBoxes(oldBoxes: number[], newBoxes: number[]): number[] {
+  const n = oldBoxes.length;
+  if (n <= 1 || n !== newBoxes.length) return [...newBoxes].sort((a, b) => a - b);
+
+  const costMatrix: number[][] = Array.from({ length: n }, () => new Array(n));
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      costMatrix[i][j] = distSq(oldBoxes[i], newBoxes[j]);
+    }
+  }
+
+  const assignment = solveHungarian(costMatrix);
+  const matched = new Array<number>(n);
+  for (let i = 0; i < n; i++) {
+    matched[i] = newBoxes[assignment[i]];
+  }
+  return matched;
 }

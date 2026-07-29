@@ -37,19 +37,6 @@ export interface TransitionResult {
   isPureSlide: boolean;
 }
 
-export interface SearchNode {
-  state: BoxState;
-  lo: number;
-  hi: number;
-  g: number;
-  h: number;
-  f: number;
-  priority: number;
-  isPureSlide: boolean;
-  parent: SearchNode | null;
-  action: Direction | null;
-}
-
 export interface SolverProgress {
   nodesExpanded: number;
   openSetSize: number;

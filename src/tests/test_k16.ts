@@ -1,16 +1,11 @@
-import { KestoSolver } from './engine/solver';
-import { arrayToBitboard } from './engine/bitboard';
+import { KestoSolver } from '../engine/solver';
+import { arrayToBitboard } from '../engine/bitboard';
+import { STRESS_TEST_LEVEL_K16 } from './testLevels';
 
 declare const process: any;
 
-const level16 = {
-  walls: [18, 21, 45, 42],
-  boxes: [0, 1, 6, 7, 8, 9, 14, 15, 48, 49, 54, 55, 56, 57, 62, 63],
-  targets: [19, 27, 35, 43, 44, 36, 28, 20, 25, 33, 34, 26, 29, 37, 38, 30],
-};
-
 const solver = new KestoSolver();
-const wallsBitboard = arrayToBitboard(level16.walls);
+const wallsBitboard = arrayToBitboard(STRESS_TEST_LEVEL_K16.walls);
 
 console.log('================================================================');
 console.log('            KESTO ENGINE 16-BOX (k=16) TEST SUITE               ');
@@ -19,9 +14,9 @@ console.log('================================================================\n'
 const memBefore = process.memoryUsage();
 const startTime = performance.now();
 
-const result = solver.solve(level16.boxes, wallsBitboard, level16.targets, {
+const result = solver.solve(STRESS_TEST_LEVEL_K16.boxes, wallsBitboard, STRESS_TEST_LEVEL_K16.targets, {
   timeLimitMs: 60000,
-  maxNodes: 5000000,
+  maxNodes: 15000000,
 });
 
 const executionTimeMs = performance.now() - startTime;

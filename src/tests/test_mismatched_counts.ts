@@ -1,5 +1,5 @@
-import { KestoSolver } from './engine/solver';
-import { arrayToBitboard } from './engine/bitboard';
+import { KestoSolver } from '../engine/solver';
+import { arrayToBitboard } from '../engine/bitboard';
 
 const solver = new KestoSolver();
 const emptyWalls = arrayToBitboard([]);
@@ -31,4 +31,4 @@ async function testAsync() {
   console.log('Test 5 (solveAsync 3 boxes, 2 targets):', r5.success === false && reportedStatus === 'UNSOLVABLE' ? 'PASS (status: UNSOLVABLE)' : 'FAIL');
 }
 
-testAsync().then(() => console.log('All tests finished successfully.'));
+testAsync().then(() => console.log('All edge case tests finished successfully.'));

@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "benchmark": "npx tsx src/benchmark.ts"
+    "benchmark": "npx tsx src/tests/benchmark.ts",
+    "test": "npx tsx src/tests/test_mismatched_counts.ts && npx tsx src/tests/test_k16.ts"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
